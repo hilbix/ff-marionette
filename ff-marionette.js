@@ -31,7 +31,8 @@ const net	= require('net');
 const ff	= net.Socket();
 const toJ	= JSON.stringify;
 
-// Make Promise out of o[m](...a, cb)
+// Make Promise out of function taking a callback as last argument:
+//	o[m](...a, cb)
 // Why isn't this the default?
 const P = (o,m,...a) =>
   {
@@ -54,6 +55,7 @@ const dump = buf =>
 
 let input = Buffer.alloc(0);
 
+// Asynchronously answer the result from the send() below
 const IDs = {}, pending = new Set();
 const process_input_data = ([t,i,K,O]) =>
   {
@@ -69,6 +71,9 @@ const process_input_data = ([t,i,K,O]) =>
       }
     ERR('WTF', k, [t,i,K,O]);
   }
+// Well, even that I never saw incomplete input, it might happen.
+// Hence we have to assemble everything until we got a full packet.
+// This is a bit complex, sorry.
 const process_input = () =>
   {
     // {object} => prompt from Browser
@@ -144,6 +149,12 @@ ff.on('close', () =>
     process.exit(bye);
   });
 
+// Here we connect to the browser
+// This probably should be a bit extended,
+// such that we can use SSH tunnels, too.
+// Feel free to improve for things like IP:port etc.
+//
+// BTW this is asynchronous, so wait for it here.
 await P(ff, 'connect', port, '127.0.0.1');
 
 // cookie: {key:value}
@@ -203,7 +214,7 @@ const alias =
   , URL:	'WebDriver:Navigate'		// {url}: set location to given URL
   , back:	'WebDriver:Back'
   , forward:	'WebDriver:Forward'
-  , refresh:	'WebDriver:Refresh'		// - reload page (forced reload not supported?)
+  , reload:	'WebDriver:Refresh'		// - reload page (forced reload not supported?)
   , min:	'WebDriver:MinimizeWindow'
   , max:	'WebDriver:MaximizeWindow'
   , full:	'WebDriver:FullscreenWindow'	// use POS to restore window position
@@ -230,12 +241,16 @@ const SPECIAL =
   , JSON(args) { return JSON.parse(args) }
   }
 
+// Split line into token SPC rest
+// return [ token, rest ]
 const token = line =>
   {
     if (!line) return [];
     const i = line.indexOf(' ');
     return [ i>0 ? line.slice(0,i) : line , i>0 ? line.slice(i+1) : void 0 ];
   }
+
+// Implements Command: ENV var selector
 const getVar = {};
 const setEnv = (s,req) =>
   {
@@ -264,6 +279,7 @@ const setEnv = (s,req) =>
     return req.p.then(_ => { const v = process.env[name] = getVar[name] = toJ(fn(_)); DEBUG('ENV', name, v); p.ok(v); return _ }, _ => { DEBUG('ENV', name, _); p.ko(_); throw _ });
   };
 
+// Asynchronous Promise, returns object with all 3: {p:promise,ok:resolve,ko:reject}
 const PO = () => { const o={}; o.p = new Promise((a,b) => { o.ok=a; o.ko=b }); return o }
 
 let silent = DIRECT;	// when direct, the silence the first pack of messages
@@ -275,12 +291,12 @@ const send = async line =>	// COMMAND JSON
     const req	= PO();
     const out	= PO();
 
-    const lOut	= LastOut;
+    const lOut	= LastOut;	// previous command was sent
     LastOut	= out.p;
-    const lReq	= LastReq;
+    const lReq	= LastReq;	// previous command has answer
     LastReq	= req;
 
-    pending.add(req.p);
+    pending.add(req.p);	// for Promise.allSettled(pending) below
 
     DEBUG('LINE', line);
     const [cmd,rest] = token(line);
@@ -289,6 +305,7 @@ const send = async line =>	// COMMAND JSON
       {
         await lOut;	// wait until previous variables are processed
 
+        // resolve the @name@ variables for a line
         const a = rest.split('@');
         while (a.length)
           {
@@ -306,65 +323,72 @@ const send = async line =>	// COMMAND JSON
                 if (t !== void 0)
                   {
                     DEBUG('W', name, line);
-                    ar.push(await t);
+                    ar.push(await t);		// Variables are asynchronous, wait for the value
                     DEBUG('C', name, line);
                     break;
                   }
-                ar.push('@');
+                ar.push('@');			// wrong sequence or unknown variable, just leave as-is
                 ar.push(name);
                 // try the next '@'
               }
           }
       }
 
+    // check for our local commands
     const args = ar.length ? ar.join('') : void 0;
     DEBUG('RUN:',cmd,args, lReq);
     const fn = SPECIAL[cmd];
     if (fn)
       {
         DEBUG(cmd, args);
-        await lOut;
-        out.ok();
-        req.ok(fn(args));
-        return req.p;
+        await lOut;			// synchronize, perhaps something is output in the command
+        out.ok();			// nothing sent to browser, so go along
+        req.ok(fn(args));		// hand out what the function returns
+        return req.p;			// just in case you want to send().then(..)
       }
 
     if (cmd === 'ENV')
       {
-        lOut.then(() => out.ok());
-        req.args = args;
-        req.ok(setEnv(args, lReq));
+        lOut.then(() => out.ok());	// taken from the previous output, so forward this state
+        req.args = args;		// dummy, for debugging
+        req.ok(setEnv(args, lReq));	// provide the variable (asynchronousy)
         return req.p;
       }
 
-    const sid	= ++SendID;
-    req.cmd	= cmd;
-    IDs[sid]	= req;
+    // This is a command sent to the browser
+    const sid	= ++SendID;		// this needs a fresh ID
+    req.cmd	= cmd;			// for output (if not silenced)
+    IDs[sid]	= req;			// track it for receive function
 
+    // built what to send.
+    // Either we have some JSON or send it as plain string
+    // Sorry, is a bit hacky.
     const j = toJ([0,sid,alias[cmd] || cmd, args && (args.startsWith('{') || args.startsWith('[') || args.startsWith('"')) ? JSON.parse(args) : args]);
 
     await lOut;		// in case we did not wait above
 
     DEBUG('OUT:', j);
-    ff.write(`${j.length}:${j}`);
+    ff.write(`${j.length}:${j}`);	// send it to browser
 
-    out.ok();
+    out.ok();				// enable the next command in chain as soon as possible
 
     if (silenced)
-      return req.p;
+      return req.p;			// return the future for the value in case you want to send().then(..
 
+    // We are not silent, so present the result on STDOUT
     const KO = _ => OUT('KO', cmd, toJ(_));
     const OK = _ =>
       {
         const k = Object.keys(_);
         if (k.length === 1 && k[0] === 'value') _ = _.value;	// simplify .value returns
         if (Array.isArray(_) && _.length && _.filter(_ => { const s = `"${_}"`; return toJ(_) !== s || s.includes(' ') }).length === 0)
-          return OUT('OK', cmd, ..._);	// array made fully of simple values
+          return OUT('OK', cmd, ..._);		// array made fully of simple values
         const j = toJ(_);
         if (_ && _.constructor === String && `"${_}"` === j && !_.startsWith('[') && !_.startsWith('{'))	// " is \" in JSON
           return OUT('OK', cmd, _);		// return simple string
-        return OUT('OK', cmd, j);	// return JSON
+        return OUT('OK', cmd, j);		// return JSON
       }
+    // If we are not silenced, we return the interpeted value
     return req.p.then(OK, KO);
   };
 
@@ -374,6 +398,8 @@ const sends = (...a) => a.map(send);
 send('New');
 if (!DIRECT) sends('ctx', 'win', 'type', 'title', 'url'); // , 'src');	complete document usually is a little too much
 
+// We are no more silent from here.
+// So commandline arguments give us output.
 silent = false;
 sends(...process.argv.slice(3));
 
@@ -392,7 +418,7 @@ const EOF = async () =>
 isEOF.then(() => EOF());	// do not detect EOF before everything was sent out
 await done();
 
-if (DIRECT) EOF();
+if (DIRECT) EOF();		// we are noninteractive (commands are from commandline)
 if (!inEOF)
   {
     // DIRECT === false
