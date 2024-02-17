@@ -228,7 +228,7 @@ const alias =
   , COOKIE:	'WebDriver:DeleteCookie'	// {name}
   //WebDriver:DeleteAllCookies must be explicitly called, this action is too dangerous to get some alias
 
-  , find:	'WebDriver:FindElement'		// search {using:"id",value:"myid"} returns first {WebDriverMagic:id}
+  , find:	'WebDriver:FindElement'		// search {using:"id",value:"myid",element} returns first {WebDriverMagic:id}
   , finds:	'WebDriver:FindElements'	// returns array of such elements
   , click:	'WebDriver:ElementClick'	// {id}
   , attr:	'WebDriver:GetElementAttribute'	// {id,name}
