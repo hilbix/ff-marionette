@@ -231,6 +231,8 @@ const alias =
   , find:	'WebDriver:FindElement'		// search {using:"id",value:"myid"} returns first {WebDriverMagic:id}
   , finds:	'WebDriver:FindElements'	// returns array of such elements
   , click:	'WebDriver:ElementClick'	// {id}
+  , attr:	'WebDriver:GetElementAttribute'	// {id,name}
+  , prop:	'WebDriver:GetElementProperty'	// {id,name}
 
   , exec:	'WebDriver:ExecuteAsyncScript'	// script
   , 'async':	'WebDriver:ExecuteScript'	// script: `callback(returnval)` function added to args at the end
