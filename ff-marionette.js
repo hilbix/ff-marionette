@@ -378,7 +378,7 @@ const send = async line =>	// COMMAND JSON
       return req.p;			// return the future for the value in case you want to send().then(..
 
     // We are not silent, so present the result on STDOUT
-    const KO = _ => OUT('KO', cmd, toJ(_));
+    const KO = _ => { exit_code=1; OUT('KO', cmd, toJ(_)) };
     const OK = _ =>
       {
         const k = Object.keys(_);
@@ -406,14 +406,14 @@ silent = false;
 sends(...process.argv.slice(3));
 
 const done = () => Promise.allSettled(pending);
-let inEOF;
+let inEOF, exit_code = 0;
 const EOF = async () =>
   {
     if (inEOF) return;
     inEOF = true;
     await done();
     if (!DIRECT) OUT('EOF');
-    process.exit(0);
+    process.exit(exit_code);
   }
 
 // Now the interactive stuff
