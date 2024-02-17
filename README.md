@@ -159,7 +159,6 @@ WebDriver:GetAlertText
 WebDriver:GetCapabilities
 WebDriver:GetComputedLabel
 WebDriver:GetComputedRole
-WebDriver:GetElementAttribute
 WebDriver:GetElementCSSValue
 WebDriver:GetElementProperty
 WebDriver:GetElementRect
