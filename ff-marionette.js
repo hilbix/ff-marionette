@@ -202,10 +202,10 @@ const alias =
   , Quit:	'Marionette:Quit'		// NEVER USE THIS, this closes the port and leaves FF in the void
 
   , ctx:	'Marionette:GetContext'		// - return current context
-  , CTX:	'Marionette:SetContext'		// ctx: either "chrome" or "content"
+  , CTX:	'Marionette:SetContext'		// ctx (str): either "chrome" or "content"
 
   , win:	'WebDriver:GetWindowHandle'	// - get the current active top window/tab
-  , WIN:	'WebDriver:SwitchToWindow'	// {handle:"string",focus:true}
+  , WIN:	'WebDriver:SwitchToWindow'	// {handle,focus:true}
   , list:	'WebDriver:GetWindowHandles'	// - array of all window handles
   , type:	'Marionette:GetWindowType'
   , title:	'WebDriver:GetTitle'	
@@ -225,7 +225,7 @@ const alias =
 
   , cookies:	'WebDriver:GetCookies'
   , cookie:	'WebDriver:AddCookie'		// cookie
-  , COOKIE:	'WebDriver:DeleteCookie'	// {name:name}
+  , COOKIE:	'WebDriver:DeleteCookie'	// {name}
   //WebDriver:DeleteAllCookies must be explicitly called, this action is too dangerous to get some alias
 
   , find:	'WebDriver:FindElement'		// search {using:"id",value:"myid"} returns first {WebDriverMagic:id}
@@ -234,8 +234,8 @@ const alias =
   , attr:	'WebDriver:GetElementAttribute'	// {id,name}
   , prop:	'WebDriver:GetElementProperty'	// {id,name}
 
-  , exec:	'WebDriver:ExecuteAsyncScript'	// script
-  , 'async':	'WebDriver:ExecuteScript'	// script: `callback(returnval)` function added to args at the end
+  , exec:	'WebDriver:ExecuteAsyncScript'	// {script}
+  , 'async':	'WebDriver:ExecuteScript'	// {script}: `callback(returnval)` function added to args at the end
   };
 
 const SPECIAL =
