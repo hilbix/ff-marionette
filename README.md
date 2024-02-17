@@ -1,6 +1,12 @@
+> This already is usable, but is in a very early state.
+
 # ff-marionette
 
 Make use of `firefox-esr --marionette` or similar.
+
+> I do not know how to adapt this to Chromium, sorry.
+> For Firefox this feature already is very badly documented (but seems to be implemented relatively straight forward).
+> OTOH for Chromium I only found completely unusable documentation (read: it looks like a tarpitting boobytrap to me).
 
 
 ## Usage
@@ -9,7 +15,12 @@ Make use of `firefox-esr --marionette` or similar.
 	cd ff-marionette
 	./ff-marionette.js $PORT
 
-Also be sure to have `nodejs` ready.  `$PORT` defaults to 2828
+For this `firefox-esr --marionette` or similar must be already running.
+Set the env variable `PORT` to the port Firefox uses.
+
+> see `netstat -natp | grep LIST | grep firefox` or `ss -tlp | grep firefox`
+
+Also be sure to have `nodejs` ready.  `$PORT` defaults to `2828` if it happen to be `0`
 
 Then type some
 
@@ -44,7 +55,7 @@ For all `COMMAND`s perhaps see
 
 - <https://developer.mozilla.org/en-US/docs/Web/WebDriver/Commands>
 - <https://searchfox.org/mozilla-central/rev/54c9b4896fdc1e858cd4942f306d877f1f3d195e/remote/marionette/driver.sys.mjs#3430>
-- <chrome://remote/content/marionette/driver.sys.mjs#3430> (on FireFox)
+- <chrome://remote/content/marionette/driver.sys.mjs> (on FireFox)
 - To see a list of commands with their aliases and comments, please look into the source code
 
 
@@ -140,6 +151,7 @@ WebDriver:AcceptDialog
 WebDriver:CloseChromeWindow
 WebDriver:DeleteSession
 WebDriver:DismissAlert
+
 WebDriver:ElementClear
 WebDriver:ElementSendKeys
 WebDriver:GetActiveElement
@@ -189,6 +201,16 @@ WTF why?
 - Because I was unable to find something suitable for me anywhere else
 - Trying to checkout the Gecko implementation of marionette-client took hours and left me with "No space left on device"
 - Also I needed somethign for tiny devices like Raspberry PI Zero with very limited filesystem resources
+
+Out of sequence?
+
+- Commands are sent immediately if possible.
+  - But the answer will be asynchronous, because the command runs asynchronously in the browser.
+- To synchronize, request to set a variable from the output.   Example:
+  - `./ff-marionette.js 0 list 'ENV w 1' 'WIN {"handle":@w@}' reload 'ENV x .' 'JSON @x@' 'find {"value":"run","using":"id"}'`
+  - `ENV x .` fills variable `x` with the result of the `reload`.  This still is asynchronous
+  - `JSON @x@` then uses the variable, hence it must be waited for, so the executon waits for `reload` before running `find`
+- Perhaps in future there will be something like `WAIT` etc. to wait for completion
 
 License?
 
