@@ -56,8 +56,8 @@ For all `COMMAND`s perhaps see
 - <https://developer.mozilla.org/en-US/docs/Web/WebDriver/Commands>
 - <https://searchfox.org/mozilla-central/rev/54c9b4896fdc1e858cd4942f306d877f1f3d195e/remote/marionette/driver.sys.mjs#3430>
 - <chrome://remote/content/marionette/driver.sys.mjs> (on FireFox)
-- To see a list of commands with their aliases and comments, please look into the source code
-
+- To see a list of commands with their aliases and comments, [please look into the source code](ff-marionette.js)
+  - Search for `const alias`
 
 ## Variables and special functions
 
