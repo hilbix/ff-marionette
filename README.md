@@ -49,7 +49,7 @@ then
 
 and you can just send commands directly
 
-	./ff-marionette.js list
+	./ff-marionette.js 0 list
 
 For all `COMMAND`s perhaps see
 
