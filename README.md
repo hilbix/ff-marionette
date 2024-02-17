@@ -4,9 +4,15 @@
 
 Make use of `firefox-esr --marionette` or similar.
 
-> I do not know how to adapt this to Chromium, sorry.
-> For Firefox this feature already is very badly documented (but seems to be implemented relatively straight forward).
-> OTOH for Chromium I only found completely unusable documentation (read: it looks like a tarpitting boobytrap to me).
+> This will not be ported to Chromium.
+>
+> After a long and very frustrating search, I came to the conclusion, to not use WebDriver for Chromium at all,
+> due to the very tedious `chromium-driver` involved, which needs to be separately loaded etc. pp.
+> This is a no-go for me and leads into the wrong direction.
+>
+> Instead the native [devtools-protocol](https://chromedevtools.github.io/devtools-protocol/) looks far more promising
+> which means, this here cannot be adapted to Chromium.  So if I ever come around doing so, I will create a similar
+> but independent tool which then connects to `chromium --remote-debugging-port=XXXX` instead.
 
 
 ## Usage
@@ -160,7 +166,6 @@ WebDriver:GetCapabilities
 WebDriver:GetComputedLabel
 WebDriver:GetComputedRole
 WebDriver:GetElementCSSValue
-WebDriver:GetElementProperty
 WebDriver:GetElementRect
 WebDriver:GetElementTagName
 WebDriver:GetElementText
